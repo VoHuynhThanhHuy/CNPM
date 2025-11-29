@@ -1,25 +1,28 @@
-from tkinter.font import names
-
-from flask_admin import Admin, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
+from flask_admin import BaseView, expose
 from eapp.models import Category, Product, UserRole
-from flask_login import logout_user
-from eapp import db, app
-from flask_login import  current_user
+from flask_admin import Admin
+from eapp import app, db
 from flask import redirect
+from flask_login import logout_user, current_user
 
-class AdminView(ModelView):
+admin = Admin(app=app, name='eSaleApp')
+
+
+class AuthenticatedModelView(ModelView):
     def is_accessible(self) -> bool:
-        return current_user.is_authenticated and current_user.user_role==UserRole.ADMIN
+        return current_user.is_authenticated and current_user.user_role == UserRole.ADMIN
 
-class ProductView(ModelView):
-    column_list = ['id','name','price','active','category_id']
-    column_searchable_list = ['name']
-    column_filters = ['id','name','price']
+
+class ProductView(AuthenticatedModelView):
     can_export = True
-    edit_modal = True
+    column_list = ['id', 'name', 'price', 'category_id']
+    page_size = 20
+    column_searchable_list = ['name']
+    column_filters = ['id', 'name', 'price']
     column_editable_list = ['name']
-    page_size = 30
+    edit_modal = True
+
 
 class LogoutView(BaseView):
     @expose('/')
@@ -30,7 +33,7 @@ class LogoutView(BaseView):
     def is_accessible(self) -> bool:
         return current_user.is_authenticated
 
-admin = Admin(app=app, name="e-Commerce's Admin")
-admin.add_view(AdminView(Product, db.session))
-admin.add_view(AdminView(Category, db.session))
+
+admin.add_view(AuthenticatedModelView(Category, db.session))
+admin.add_view(ProductView(Product, db.session))
 admin.add_view(LogoutView(name='Đăng xuất'))
